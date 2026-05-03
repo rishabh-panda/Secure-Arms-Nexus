@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "X0SyZF5Zgmjh8K0ypZCKO"
+uri = "file://README.md"
+type = "text"
+title = "ArmorX README.md"
