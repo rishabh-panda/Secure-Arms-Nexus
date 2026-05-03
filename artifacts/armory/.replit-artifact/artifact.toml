@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "ArmorX — Arms & Ammunition Platform"
+version = "1.0.0"
+id = "artifacts/armory"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20889
+
+[services.development]
+run = "pnpm --filter @workspace/armory run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/armory", "run", "build" ]
+publicDir = "artifacts/armory/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20889"
+BASE_PATH = "/"
