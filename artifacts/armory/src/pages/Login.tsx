@@ -39,7 +39,7 @@ export default function Login() {
         setLocation("/");
       },
       onError: (err) => {
-        toast({ title: "Authentication Failed", description: err.error || "Invalid credentials", variant: "destructive" });
+        toast({ title: "Authentication Failed", description: (err.data as any)?.message || "Invalid credentials", variant: "destructive" });
       }
     });
   };

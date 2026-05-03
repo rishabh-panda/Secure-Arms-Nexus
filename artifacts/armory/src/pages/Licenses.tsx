@@ -49,7 +49,7 @@ export default function Licenses() {
         form.reset();
       },
       onError: (err) => {
-        toast({ title: "Registration Failed", description: err.error || "Failed to submit license.", variant: "destructive" });
+        toast({ title: "Registration Failed", description: (err.data as any)?.message || "Failed to submit license.", variant: "destructive" });
       }
     });
   };

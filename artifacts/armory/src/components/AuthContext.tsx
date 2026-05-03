@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
+import React, { createContext, useContext } from "react";
+import { useGetMe, useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import type { User } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -18,16 +18,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const { data: user, isLoading, error } = useGetMe({
     query: {
+      queryKey: getGetMeQueryKey(),
       retry: false,
     }
   });
+
+  const logoutMutation = useLogout();
 
   const refreshAuth = () => {
     queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
   };
 
-  const logoutLocal = () => {
-    queryClient.setQueryData(getGetMeQueryKey(), null);
+  const logout = () => {
+    logoutMutation.mutate(undefined, {
+      onSettled: () => {
+        queryClient.clear();
+      },
+    });
   };
 
   const value = {
@@ -35,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     isAuthenticated: !!user && !error,
     isAdmin: user?.role === "admin",
-    logout: logoutLocal,
+    logout,
     refreshAuth
   };
 

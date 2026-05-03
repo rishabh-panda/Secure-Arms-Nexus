@@ -1,17 +1,31 @@
 import { useParams, Link } from "wouter";
-import { useGetOrder } from "@workspace/api-client-react";
+import { useGetOrder, getGetOrderQueryKey } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { ArrowLeft, Package, ShieldCheck, Truck, CheckCircle2, Clock, AlertTriangle, FileText } from "lucide-react";
+import { ArrowLeft, Package, ShieldCheck, Truck, CheckCircle2, Clock, AlertTriangle, FileText, XCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export default function OrderDetail() {
   const params = useParams();
   const id = Number(params.id);
-  const { data: order, isLoading } = useGetOrder(id, { query: { enabled: !!id } });
+  const { data: order, isLoading } = useGetOrder(id, {
+    query: {
+      queryKey: getGetOrderQueryKey(id),
+      enabled: !!id,
+    }
+  });
 
   if (isLoading) return <div className="p-10 font-mono text-primary animate-pulse text-center">Decrypting Order Data...</div>;
-  if (!order) return <div className="p-10 font-mono text-destructive text-center uppercase tracking-widest">Order Not Found</div>;
+  if (!order) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+      <AlertTriangle className="w-16 h-16 text-destructive/50" />
+      <p className="font-mono text-destructive text-center uppercase tracking-widest">Order Not Found</p>
+      <Link href="/orders">
+        <Button variant="outline" className="font-mono uppercase text-xs border-primary/30 text-primary">Return to Orders</Button>
+      </Link>
+    </div>
+  );
 
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -60,7 +74,7 @@ export default function OrderDetail() {
       <Card className="bg-card/40 backdrop-blur-sm border-primary/20 rounded-none overflow-hidden">
         <CardContent className="p-6 md:p-8">
           <h3 className="font-mono text-sm uppercase tracking-widest text-muted-foreground mb-8">Operational Status</h3>
-          
+
           {isCancelledOrRejected ? (
             <div className="bg-destructive/10 border border-destructive/30 p-6 flex flex-col items-center justify-center text-center">
               <AlertTriangle className="w-12 h-12 text-destructive mb-4" />
@@ -73,15 +87,15 @@ export default function OrderDetail() {
               <div className="flex flex-col md:flex-row justify-between gap-6 relative z-10">
                 {steps.map((step, idx) => {
                   let status: 'completed' | 'current' | 'upcoming' = 'upcoming';
-                  if (order.status === 'approved' && step.id === 'compliance_review') status = 'completed'; // handle skipped visual states
+                  if (order.status === 'approved' && step.id === 'compliance_review') status = 'completed';
                   else if (idx < currentStepIndex) status = 'completed';
                   else if (idx === currentStepIndex || (order.status === 'approved' && step.id === 'processing')) status = 'current';
 
                   return (
                     <div key={step.id} className="flex flex-row md:flex-col items-center gap-4 md:gap-2 relative bg-card/40 md:bg-transparent">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 
-                        ${status === 'completed' ? 'bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(0,212,255,0.5)]' : 
-                          status === 'current' ? 'bg-primary/20 text-primary border-primary animate-pulse' : 
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2
+                        ${status === 'completed' ? 'bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(0,212,255,0.5)]' :
+                          status === 'current' ? 'bg-primary/20 text-primary border-primary animate-pulse' :
                           'bg-background border-primary/20 text-muted-foreground'}`}>
                         <step.icon className="w-5 h-5" />
                       </div>
@@ -139,7 +153,7 @@ export default function OrderDetail() {
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Fees & Shipping</span>
-                <span>${(order.total - order.subtotal).toFixed(2)}</span>
+                <span>${(Number(order.total) - Number(order.subtotal)).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-primary text-lg font-bold pt-2">
                 <span>Total</span>
@@ -156,23 +170,23 @@ export default function OrderDetail() {
               <h3 className="font-mono text-sm uppercase tracking-widest text-muted-foreground border-b border-primary/20 pb-2 mb-4">Delivery Destination</h3>
               <p className="font-mono text-sm text-foreground/80 whitespace-pre-wrap">{order.shippingAddress}</p>
             </div>
-            
+
             <div>
               <h3 className="font-mono text-sm uppercase tracking-widest text-muted-foreground border-b border-primary/20 pb-2 mb-4">Clearance Protocols</h3>
               <ul className="space-y-2">
                 <li className="flex items-center text-sm font-sans text-foreground/80">
-                  <CheckCircle2 className="w-4 h-4 text-green-500 mr-2" /> Age Verification: Passed
+                  <CheckCircle2 className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" /> Age Verification: Passed
                 </li>
                 <li className="flex items-center text-sm font-sans text-foreground/80">
-                  <CheckCircle2 className="w-4 h-4 text-green-500 mr-2" /> Identity KYC: Passed
+                  <CheckCircle2 className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" /> Identity KYC: Passed
                 </li>
                 <li className="flex items-center text-sm font-sans text-foreground/80">
                   {order.status === 'pending' || order.status === 'compliance_review' ? (
-                    <Clock className="w-4 h-4 text-amber-500 mr-2" /> 
+                    <Clock className="w-4 h-4 text-amber-500 mr-2 flex-shrink-0" />
                   ) : order.status === 'rejected' || order.status === 'cancelled' ? (
-                     <XCircle className="w-4 h-4 text-destructive mr-2" />
+                    <XCircle className="w-4 h-4 text-destructive mr-2 flex-shrink-0" />
                   ) : (
-                    <ShieldCheck className="w-4 h-4 text-green-500 mr-2" />
+                    <ShieldCheck className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                   )}
                   Transfer Approval: {order.status === 'pending' || order.status === 'compliance_review' ? 'Pending FFL Review' : order.status === 'rejected' || order.status === 'cancelled' ? 'Failed' : 'Authorized'}
                 </li>

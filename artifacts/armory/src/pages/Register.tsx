@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 import { useRegister, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 
 const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  firstName: z.string().min(2),
-  lastName: z.string().min(2),
-  dateOfBirth: z.string().min(10), // simplified date
+  email: z.string().email("Enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string(),
+  firstName: z.string().min(2, "First name must be at least 2 characters"),
+  lastName: z.string().min(2, "Last name must be at least 2 characters"),
+  dateOfBirth: z.string().min(10, "Date of birth is required"),
   agreedToTerms: z.boolean().refine(val => val === true, "You must agree to the terms"),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passcodes do not match",
+  path: ["confirmPassword"],
 });
 
 export default function Register() {
@@ -27,12 +31,15 @@ export default function Register() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const registerMutation = useRegister();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       email: "",
       password: "",
+      confirmPassword: "",
       firstName: "",
       lastName: "",
       dateOfBirth: "",
@@ -41,14 +48,15 @@ export default function Register() {
   });
 
   const onSubmit = (values: z.infer<typeof registerSchema>) => {
-    registerMutation.mutate({ data: values }, {
+    const { confirmPassword: _, ...payload } = values;
+    registerMutation.mutate({ data: payload }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
         toast({ title: "Registration Successful", description: "Identity registered. Awaiting KYC." });
         setLocation("/kyc");
       },
       onError: (err) => {
-        toast({ title: "Registration Failed", description: err.error || "Failed to register", variant: "destructive" });
+        toast({ title: "Registration Failed", description: (err.data as any)?.message || "Failed to register", variant: "destructive" });
       }
     });
   };
@@ -94,6 +102,7 @@ export default function Register() {
                   )}
                 />
               </div>
+
               <FormField
                 control={form.control}
                 name="email"
@@ -101,12 +110,13 @@ export default function Register() {
                   <FormItem>
                     <FormLabel className="font-mono uppercase text-xs text-primary/80 tracking-wider">Communication Link (Email)</FormLabel>
                     <FormControl>
-                      <Input placeholder="operative@armorx.com" className="bg-background/50 border-primary/20 focus-visible:border-primary font-mono text-sm" {...field} />
+                      <Input type="email" autoComplete="email" placeholder="operative@armorx.com" className="bg-background/50 border-primary/20 focus-visible:border-primary font-mono text-sm" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="password"
@@ -114,25 +124,77 @@ export default function Register() {
                   <FormItem>
                     <FormLabel className="font-mono uppercase text-xs text-primary/80 tracking-wider">Passcode</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" className="bg-background/50 border-primary/20 focus-visible:border-primary font-mono text-sm tracking-widest" {...field} />
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          autoComplete="new-password"
+                          placeholder="••••••••"
+                          className="bg-background/50 border-primary/20 focus-visible:border-primary font-mono text-sm tracking-widest pr-10"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(v => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-mono uppercase text-xs text-primary/80 tracking-wider">Confirm Passcode</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showConfirm ? "text" : "password"}
+                          autoComplete="new-password"
+                          placeholder="••••••••"
+                          className="bg-background/50 border-primary/20 focus-visible:border-primary font-mono text-sm tracking-widest pr-10"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirm(v => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="dateOfBirth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-mono uppercase text-xs text-primary/80 tracking-wider">Date of Birth (YYYY-MM-DD)</FormLabel>
+                    <FormLabel className="font-mono uppercase text-xs text-primary/80 tracking-wider">Date of Birth</FormLabel>
                     <FormControl>
-                      <Input placeholder="1990-01-01" className="bg-background/50 border-primary/20 focus-visible:border-primary font-mono text-sm" {...field} />
+                      <Input
+                        type="date"
+                        max={new Date(new Date().setFullYear(new Date().getFullYear() - 21)).toISOString().split('T')[0]}
+                        className="bg-background/50 border-primary/20 focus-visible:border-primary font-mono text-sm"
+                        {...field}
+                      />
                     </FormControl>
+                    <p className="text-[10px] font-mono text-muted-foreground uppercase mt-1">Must be 21 years or older</p>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="agreedToTerms"

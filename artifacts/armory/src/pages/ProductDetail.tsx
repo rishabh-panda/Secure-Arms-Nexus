@@ -77,7 +77,7 @@ function SpecLabel({ position, title, value }: { position: [number, number, numb
 export default function ProductDetail() {
   const params = useParams();
   const id = Number(params.id);
-  const { data: product, isLoading } = useGetProduct(id, { query: { enabled: !!id } });
+  const { data: product, isLoading } = useGetProduct(id, { query: { queryKey: getGetProductQueryKey(id), enabled: !!id } });
   const addToCartMutation = useAddToCart();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -89,7 +89,7 @@ export default function ProductDetail() {
         toast({ title: "Asset Secured", description: "Added to cart." });
       },
       onError: (err) => {
-        toast({ title: "Error", description: err.error || "Failed to add to cart", variant: "destructive" });
+        toast({ title: "Error", description: (err.data as any)?.message || "Failed to add to cart", variant: "destructive" });
       }
     });
   };
@@ -148,8 +148,8 @@ export default function ProductDetail() {
             cellThickness={0.5}
             sectionSize={2}
             sectionThickness={1}
-            sectionColor={[0, 0.8, 1]}
-            cellColor={[0.1, 0.2, 0.3]}
+            sectionColor="#00d4ff"
+            cellColor="#1a2a3a"
             fadeDistance={20}
             fadeStrength={1}
           />

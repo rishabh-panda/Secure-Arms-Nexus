@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { useAuth } from "@/components/AuthContext";
 import { useGetKycStatus } from "@workspace/api-client-react";
 import { User as UserIcon, Shield, FileText, Activity, ShieldCheck, Mail, Calendar, LogOut } from "lucide-react";
@@ -82,7 +83,7 @@ export default function Profile() {
                     )}
                   </div>
                   <div className="w-full h-1 bg-background border border-primary/10">
-                    <div className={`h-full ${user.isAgeVerified ? 'bg-green-500/50' : 'bg-destructive/50 w-1/4'}`} style={{ width: user.isAgeVerified ? '100%' : undefined }}></div>
+                    <div className={`h-full ${user.isAgeVerified ? 'bg-green-500/50 w-full' : 'bg-destructive/50 w-1/4'}`}></div>
                   </div>
                 </div>
 
@@ -116,13 +117,13 @@ export default function Profile() {
               </h3>
               <div className="space-y-2">
                 <Button variant="outline" className="w-full justify-start font-mono text-xs uppercase border-primary/20 hover:bg-primary/10 hover:text-primary" asChild>
-                  <a href="/orders">View Logistics History</a>
+                  <Link href="/orders">View Logistics History</Link>
                 </Button>
                 <Button variant="outline" className="w-full justify-start font-mono text-xs uppercase border-primary/20 hover:bg-primary/10 hover:text-primary" asChild>
-                  <a href="/licenses">Manage Licenses</a>
+                  <Link href="/licenses">Manage Licenses</Link>
                 </Button>
                 <Button variant="outline" className="w-full justify-start font-mono text-xs uppercase border-primary/20 hover:bg-primary/10 hover:text-primary" asChild>
-                  <a href="/kyc">Update Clearance Data</a>
+                  <Link href="/kyc">Update Clearance Data</Link>
                 </Button>
               </div>
             </CardContent>

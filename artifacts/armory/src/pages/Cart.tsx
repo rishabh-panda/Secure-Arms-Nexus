@@ -1,7 +1,8 @@
+import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useGetCart, useUpdateCartItem, useRemoveFromCart, useClearCart, useValidateCart, getGetCartQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ShieldAlert, Trash2, Plus, Minus, ArrowRight, AlertTriangle, ShoppingCart } from "lucide-react";
+import { ShieldAlert, Trash2, Plus, Minus, ArrowRight, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -10,24 +11,34 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 export default function Cart() {
   const [, setLocation] = useLocation();
   const { data: cart, isLoading } = useGetCart();
-  const { data: validation } = useValidateCart({ query: { enabled: !!cart && cart.items.length > 0 } });
-  
+
+  const validateMutation = useValidateCart();
   const updateMutation = useUpdateCartItem();
   const removeMutation = useRemoveFromCart();
   const clearMutation = useClearCart();
-  
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Trigger validation whenever cart item count changes
+  useEffect(() => {
+    if (cart && cart.items.length > 0) {
+      validateMutation.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart?.itemCount]);
+
+  const validation = validateMutation.data;
+
   const handleUpdate = (productId: number, quantity: number) => {
     if (quantity < 1) return;
-    updateMutation.mutate({ id: productId, data: { quantity } }, {
+    updateMutation.mutate({ productId, data: { quantity } }, {
       onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() })
     });
   };
 
   const handleRemove = (productId: number) => {
-    removeMutation.mutate({ id: productId }, {
+    removeMutation.mutate({ productId }, {
       onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() })
     });
   };
@@ -71,30 +82,30 @@ export default function Cart() {
               <Trash2 className="w-3 h-3 mr-2" /> Clear Payload
             </Button>
           </div>
-          
+
           {cart.items.map(item => (
             <Card key={item.productId} className="bg-card/40 backdrop-blur-sm border-primary/20 rounded-none">
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-20 h-20 bg-background/80 border border-primary/10 flex items-center justify-center">
+                <div className="w-20 h-20 bg-background/80 border border-primary/10 flex items-center justify-center flex-shrink-0">
                   {item.imageUrl ? (
                     <img src={item.imageUrl} alt={item.productName} className="max-w-full max-h-full p-2 object-contain" />
                   ) : (
                     <ShoppingCart className="w-6 h-6 text-muted-foreground/30" />
                   )}
                 </div>
-                
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     {item.requiresLicense && (
                       <span className="bg-destructive/20 text-destructive border border-destructive/30 text-[9px] font-mono uppercase px-1.5 py-0.5">Lic Req</span>
                     )}
                     <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">{item.type}</span>
                   </div>
-                  <h3 className="font-mono text-lg uppercase tracking-wide">{item.productName}</h3>
+                  <h3 className="font-mono text-lg uppercase tracking-wide truncate">{item.productName}</h3>
                   <div className="font-mono text-primary font-bold mt-1">${Number(item.price).toFixed(2)}</div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-background/50 border border-primary/20 p-1">
+                <div className="flex items-center gap-3 bg-background/50 border border-primary/20 p-1 flex-shrink-0">
                   <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none hover:bg-primary/20 hover:text-primary" onClick={() => handleUpdate(item.productId, item.quantity - 1)}>
                     <Minus className="w-3 h-3" />
                   </Button>
@@ -104,7 +115,7 @@ export default function Cart() {
                   </Button>
                 </div>
 
-                <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10 ml-2" onClick={() => handleRemove(item.productId)}>
+                <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10 ml-2 flex-shrink-0" onClick={() => handleRemove(item.productId)}>
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </CardContent>
@@ -116,7 +127,7 @@ export default function Cart() {
           <Card className="bg-card/60 backdrop-blur-md border-primary/30 rounded-none">
             <CardContent className="p-6">
               <h2 className="font-mono text-xl uppercase tracking-widest border-b border-primary/20 pb-4 mb-4">Summary</h2>
-              
+
               <div className="space-y-3 mb-6 font-mono text-sm">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Items ({cart.itemCount})</span>
@@ -142,16 +153,15 @@ export default function Cart() {
                   <AlertTitle className="font-mono uppercase tracking-wider text-xs">Compliance Hold</AlertTitle>
                   <AlertDescription className="font-sans text-xs mt-2">
                     <ul className="list-disc pl-4 space-y-1">
-                      {validation.issues.map((i, idx) => <li key={idx}>{i}</li>)}
+                      {validation.issues.map((issue, idx) => <li key={idx}>{issue}</li>)}
                     </ul>
                   </AlertDescription>
                 </Alert>
               )}
 
-              <Button 
+              <Button
                 className="w-full h-12 font-mono uppercase tracking-widest bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-primary-foreground shadow-[0_0_15px_rgba(0,212,255,0.2)]"
                 onClick={() => setLocation("/checkout")}
-                disabled={validation ? !validation.isEligible : false}
               >
                 Proceed to Checkout <ArrowRight className="w-4 h-4 ml-2" />
               </Button>

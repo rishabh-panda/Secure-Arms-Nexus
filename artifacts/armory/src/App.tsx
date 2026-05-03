@@ -1,9 +1,9 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
-import { AuthProvider } from "@/components/AuthContext";
+import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { MainLayout } from "@/components/MainLayout";
 
 import Home from "@/pages/Home";
@@ -29,6 +29,35 @@ const queryClient = new QueryClient({
   },
 });
 
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="font-mono text-primary animate-pulse text-sm uppercase tracking-widest">Verifying clearance...</div>
+    </div>
+  );
+
+  if (!isAuthenticated) return <Redirect to="/login" />;
+
+  return <Component />;
+}
+
+function AdminRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="font-mono text-primary animate-pulse text-sm uppercase tracking-widest">Verifying clearance...</div>
+    </div>
+  );
+
+  if (!isAuthenticated) return <Redirect to="/login" />;
+  if (!isAdmin) return <Redirect to="/" />;
+
+  return <Component />;
+}
+
 function Router() {
   return (
     <MainLayout>
@@ -38,19 +67,35 @@ function Router() {
         <Route path="/register" component={Register} />
         <Route path="/products" component={Products} />
         <Route path="/products/:id" component={ProductDetail} />
-        
-        {/* Protected routes implied via component logic or routing structure */}
-        <Route path="/cart" component={Cart} />
-        <Route path="/checkout" component={Checkout} />
-        <Route path="/orders" component={Orders} />
-        <Route path="/orders/:id" component={OrderDetail} />
-        <Route path="/kyc" component={Kyc} />
-        <Route path="/licenses" component={Licenses} />
-        <Route path="/profile" component={Profile} />
-        
-        {/* Admin Nested Routes */}
-        <Route path="/admin" component={AdminRouter} />
-        <Route path="/admin/:rest*" component={AdminRouter} />
+
+        <Route path="/cart">
+          <ProtectedRoute component={Cart} />
+        </Route>
+        <Route path="/checkout">
+          <ProtectedRoute component={Checkout} />
+        </Route>
+        <Route path="/orders">
+          <ProtectedRoute component={Orders} />
+        </Route>
+        <Route path="/orders/:id">
+          <ProtectedRoute component={OrderDetail} />
+        </Route>
+        <Route path="/kyc">
+          <ProtectedRoute component={Kyc} />
+        </Route>
+        <Route path="/licenses">
+          <ProtectedRoute component={Licenses} />
+        </Route>
+        <Route path="/profile">
+          <ProtectedRoute component={Profile} />
+        </Route>
+
+        <Route path="/admin">
+          <AdminRoute component={AdminRouter} />
+        </Route>
+        <Route path="/admin/:rest*">
+          <AdminRoute component={AdminRouter} />
+        </Route>
 
         <Route component={NotFound} />
       </Switch>

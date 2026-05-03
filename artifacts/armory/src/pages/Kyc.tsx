@@ -49,7 +49,7 @@ export default function Kyc() {
         toast({ title: "Data Transmitted", description: "Identity documents submitted for review." });
       },
       onError: (err) => {
-        toast({ title: "Transmission Error", description: err.error || "Failed to submit documents.", variant: "destructive" });
+        toast({ title: "Transmission Error", description: (err.data as any)?.message || "Failed to submit documents.", variant: "destructive" });
       }
     });
   };
