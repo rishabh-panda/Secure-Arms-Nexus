@@ -1,5 +1,9 @@
 <div align="center">
 
+# ⚠️ Warning
+
+This is a **vibecoded, experimental toy project** — it’s a rough, non-production prototype built for exploration and fun.
+
 ```
 █████╗ ██████╗ ███╗   ███╗ ██████╗ ██████╗ ██╗  ██╗
 ██╔══██╗██╔══██╗████╗ ████║██╔═══██╗██╔══██╗╚██╗██╔╝
